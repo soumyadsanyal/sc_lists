@@ -102,9 +102,9 @@ abstract class TweetSet {
    * Question: Should we implment this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-    def mostRetweeted: Tweet = this match {
-      case Empty => throw new java.util.NoSuchElementException
-      case NonEmpty
+  def mostRetweeted: Tweet 
+
+
   
   /**
    * Returns a list containing all tweets of this set, sorted by retweet count
@@ -115,7 +115,7 @@ abstract class TweetSet {
    * Question: Should we implment this method here, or should it remain abstract
    * and be implemented in the subclasses?
    */
-    def descendingByRetweet: TweetList = ???
+    def descendingByRetweet: TweetList 
   
   /**
    * The following methods are already implemented
@@ -157,28 +157,59 @@ case class Empty() extends TweetSet {
 
   def incl(tweet: Tweet): TweetSet = new NonEmpty(tweet, new Empty, new Empty)
 
+  def mostRetweeted: Tweet = throw new java.util.NoSuchElementException
+
+  override def descendingByRetweet: TweetList = Nil
+
   def remove(tweet: Tweet): TweetSet = this
 
   def foreach(f: Tweet => Unit): Unit = ()
 }
 
-case class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetSet {
+case class NonEmpty(val elem: Tweet, val left: TweetSet, val right: TweetSet) extends TweetSet {
 
     override def filterAcc(p: Tweet => Boolean, acc: TweetSet): TweetSet = {
       if (p(elem)) {
-        var temp1 = acc.incl(elem)
-        var temp2 = temp1.union(left.filterAcc(p, acc))
-        var temp3 = temp2.union(right.filterAcc(p, acc))
-        return temp3}
+        return acc.incl(elem).union(left.filterAcc(p, acc)).union(right.filterAcc(p, acc))
+        }
         else
         {
-        var temp2 = acc.union(left.filterAcc(p, acc))
-        var temp3 = temp2.union(right.filterAcc(p, acc))
-        return temp3}
+        return acc.union(left.filterAcc(p, acc)).union(right.filterAcc(p, acc))
+        }
     }
 
+    def mostRetweetedCount: Int = {
+        var values:List[Int] = List()
+//        println(this.toString)
+        this.foreach((t:Tweet) => {
+        values = values :+ t.retweets
+//        println(values)
+        })
+        return values.max
+    }
+
+
+
+
+  def mostRetweeted: Tweet = {
+      val bestval = this.mostRetweetedCount
+      val bestset = this.filter((t:Tweet) => (t.retweets >= bestval))
+//      println(bestset.toString)
+
+      val res = bestset match {
+          case NonEmpty(elem, left, right) => elem
+          case Empty() => new Tweet("failure", "failure", 0)
+      }
+      return res
+  }
   
-    
+    override def descendingByRetweet: TweetList = {
+                val best = this.mostRetweeted
+                val rest = this.remove(best)
+                return new Cons(best,rest.descendingByRetweet)
+            }
+
+     
   /**
    * The following methods are already implemented
    */
@@ -210,6 +241,7 @@ case class NonEmpty(elem: Tweet, left: TweetSet, right: TweetSet) extends TweetS
 
   def right(x: Int): TweetSet = {
 		  return this.right}
+
 
 }
 
